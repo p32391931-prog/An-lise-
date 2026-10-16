@@ -41,6 +41,24 @@ export const createPosition = (body) => client.post("/positions", body).then((r)
 export const updatePosition = (id, body) => client.put(`/positions/${id}`, body).then((r) => r.data);
 export const deletePosition = (id) => client.delete(`/positions/${id}`).then((r) => r.data);
 
+// Formations
+export const getFormations = () => client.get("/formations").then((r) => r.data);
+export const createFormation = (body) => client.post("/formations", body).then((r) => r.data);
+export const updateFormation = (id, body) => client.put(`/formations/${id}`, body).then((r) => r.data);
+export const deleteFormation = (id) => client.delete(`/formations/${id}`).then((r) => r.data);
+
+// Rallies
+export const getRallies = (videoId) => client.get("/rallies", { params: videoId ? { video_id: videoId } : {} }).then((r) => r.data);
+export const linkRally = (body) => client.post("/rallies/link", body).then((r) => r.data);
+export const deleteRally = (id) => client.delete(`/rallies/${id}`).then((r) => r.data);
+
+// Archive
+export const archiveFundamento = (id, archived) => client.patch(`/fundamentos/${id}/archive?archived=${archived}`).then((r) => r.data);
+export const archiveClassificacao = (id, archived) => client.patch(`/classificacoes/${id}/archive?archived=${archived}`).then((r) => r.data);
+
+// AI
+export const aiAnalyze = (body) => client.post("/ai/analyze", body).then((r) => r.data);
+
 // Fundamentos
 export const getFundamentos = () => client.get("/fundamentos").then((r) => r.data);
 export const createFundamento = (body) => client.post("/fundamentos", body).then((r) => r.data);

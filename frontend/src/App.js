@@ -9,6 +9,7 @@ import Athletes from "@/pages/Athletes";
 import AthleteDossier from "@/pages/AthleteDossier";
 import Analyze from "@/pages/Analyze";
 import Reports from "@/pages/Reports";
+import AIAnalysis from "@/pages/AIAnalysis";
 import SettingsPage from "@/pages/Settings";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
             <Route path="/atletas/:id" element={<AthleteDossier />} />
             <Route path="/analisar/:videoId" element={<Analyze />} />
             <Route path="/relatorios" element={<Reports />} />
+            <Route path="/ia" element={<AIAnalysis />} />
             <Route path="/configuracoes" element={<SettingsPage />} />
           </Routes>
         </BrowserRouter>

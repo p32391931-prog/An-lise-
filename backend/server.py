@@ -7,6 +7,7 @@ import io
 import csv
 import logging
 import requests
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any, Dict
@@ -101,6 +102,8 @@ class FundamentoIn(BaseModel):
     shortcut: Optional[str] = None
     order: int = 0
     active: bool = True
+    archived: bool = False
+    uses_court: bool = True
 
 
 class ClassificacaoIn(BaseModel):
@@ -108,6 +111,13 @@ class ClassificacaoIn(BaseModel):
     label: str
     symbol: Optional[str] = None
     color: str = "#10B981"
+    order: int = 0
+    active: bool = True
+    archived: bool = False
+
+
+class FormationIn(BaseModel):
+    name: str
     order: int = 0
     active: bool = True
 
@@ -153,7 +163,14 @@ class ActionIn(BaseModel):
     clip_after: float = 10.0
     annotations: List[Dict[str, Any]] = []
     rally_id: Optional[str] = None
-    phase: Optional[str] = None  # K1 | K2 | outras
+    phase: Optional[str] = None  # situação tática: K1 | K2 | K3 | continuidade | contra-ataque | custom
+    set_number: Optional[int] = None
+    formation: Optional[str] = None  # rotação/formação (ex: P1)
+    result: Optional[str] = None  # resultado da jogada (ponto/erro/continuidade)
+    court: Optional[Dict[str, Any]] = None  # {zone, point:{x,y}, arrow:{x1,y1,x2,y2}, kind}
+    clip_start: Optional[float] = None  # recorte manual (segundos)
+    clip_end: Optional[float] = None
+    pending_export: bool = False  # metadados: edição que exige download do arquivo original
 
 
 class SavedFilterIn(BaseModel):
@@ -205,6 +222,28 @@ async def delete_position(item_id: str):
     return {"ok": True}
 
 
+# ----------------- Formations -----------------
+@api_router.get("/formations")
+async def list_formations():
+    return await db.formations.find({}, {"_id": 0}).sort("order", 1).to_list(500)
+
+
+@api_router.post("/formations")
+async def create_formation(body: FormationIn):
+    return await insert("formations", body.model_dump())
+
+
+@api_router.put("/formations/{item_id}")
+async def update_formation(item_id: str, body: FormationIn):
+    return await update("formations", item_id, body.model_dump())
+
+
+@api_router.delete("/formations/{item_id}")
+async def delete_formation(item_id: str):
+    await db.formations.update_one({"id": item_id}, {"$set": {"active": False}})
+    return {"ok": True}
+
+
 # ----------------- Fundamentos & Classificacoes -----------------
 @api_router.get("/fundamentos")
 async def list_fundamentos():
@@ -227,6 +266,11 @@ async def delete_fundamento(item_id: str):
     return {"ok": True}
 
 
+@api_router.patch("/fundamentos/{item_id}/archive")
+async def archive_fundamento(item_id: str, archived: bool = Query(True)):
+    return await update("fundamentos", item_id, {"archived": archived})
+
+
 @api_router.get("/classificacoes")
 async def list_classificacoes(fundamento_id: Optional[str] = None):
     q = {"fundamento_id": fundamento_id} if fundamento_id else {}
@@ -247,6 +291,11 @@ async def update_classificacao(item_id: str, body: ClassificacaoIn):
 async def delete_classificacao(item_id: str):
     await db.classificacoes.update_one({"id": item_id}, {"$set": {"active": False}})
     return {"ok": True}
+
+
+@api_router.patch("/classificacoes/{item_id}/archive")
+async def archive_classificacao(item_id: str, archived: bool = Query(True)):
+    return await update("classificacoes", item_id, {"archived": archived})
 
 
 # ----------------- Athletes -----------------
@@ -399,6 +448,33 @@ async def delete_action(item_id: str):
     return {"ok": True}
 
 
+# ----------------- Rallies (sequências / jogadas) -----------------
+@api_router.get("/rallies")
+async def list_rallies(video_id: Optional[str] = None):
+    q = {"video_id": video_id} if video_id else {}
+    return await db.rallies.find(q, {"_id": 0}).sort("created_at", -1).to_list(2000)
+
+
+@api_router.post("/rallies/link")
+async def link_rally(payload: Dict[str, Any]):
+    action_ids = payload.get("action_ids", [])
+    situation = payload.get("situation")
+    label = payload.get("label")
+    video_id = payload.get("video_id")
+    if len(action_ids) < 1:
+        raise HTTPException(400, "Selecione ações para relacionar")
+    rally = await insert("rallies", {"video_id": video_id, "situation": situation, "label": label, "action_ids": action_ids})
+    await db.actions.update_many({"id": {"$in": action_ids}}, {"$set": {"rally_id": rally["id"], "phase": situation or None}})
+    return rally
+
+
+@api_router.delete("/rallies/{item_id}")
+async def delete_rally(item_id: str):
+    await db.actions.update_many({"rally_id": item_id}, {"$set": {"rally_id": None}})
+    await db.rallies.delete_one({"id": item_id})
+    return {"ok": True}
+
+
 # ----------------- Saved Filters -----------------
 @api_router.get("/saved-filters")
 async def list_filters():
@@ -474,6 +550,12 @@ DEFAULT_FUNDAMENTOS = [
     {"name": "Defesa", "color": "#F59E0B", "shortcut": "D", "classes": [("Perfeita", "##", "#10B981"), ("Boa", "+", "#3B82F6"), ("Ruim", "-", "#F97316"), ("Erro", "=", "#EF4444")]},
 ]
 DEFAULT_POSITIONS = ["Levantador", "Ponteiro", "Oposto", "Central", "Líbero"]
+DEFAULT_FORMATIONS = ["P1", "P2", "P3", "P4", "P5", "P6"]
+EXTRA_FUNDAMENTOS = [
+    {"name": "Contra-ataque", "color": "#06B6D4", "shortcut": "C", "classes": [("Ponto", "##", "#10B981"), ("Defendido", "+", "#3B82F6"), ("Continuidade", "~", "#8B5CF6"), ("Erro", "=", "#EF4444")]},
+    {"name": "Cobertura", "color": "#84CC16", "shortcut": "O", "classes": [("Positiva", "+", "#10B981"), ("Negativa", "-", "#F97316"), ("Erro", "=", "#EF4444")]},
+    {"name": "Continuidade", "color": "#A855F7", "shortcut": "T", "classes": [("Mantida", "+", "#10B981"), ("Perdida", "-", "#EF4444")]},
+]
 
 
 async def seed():
@@ -493,6 +575,22 @@ async def seed():
 
     positions = await db.positions.find({}, {"_id": 0}).to_list(50)
     pos_by_name = {p["name"]: p for p in positions}
+
+    if await db.formations.count_documents({}) == 0:
+        for i, name in enumerate(DEFAULT_FORMATIONS):
+            await insert("formations", {"name": name, "order": i, "active": True})
+        logger.info("Seeded formations")
+
+    # idempotent: add extra default fundamentos if missing
+    existing_fund_names = {f["name"] for f in await db.fundamentos.find({}, {"_id": 0, "name": 1}).to_list(100)}
+    base_order = await db.fundamentos.count_documents({})
+    for k, f in enumerate(EXTRA_FUNDAMENTOS):
+        if f["name"] in existing_fund_names:
+            continue
+        fdoc = await insert("fundamentos", {"name": f["name"], "color": f["color"], "shortcut": f["shortcut"], "order": base_order + k, "active": True, "archived": False, "uses_court": True})
+        for j, (label, symbol, color) in enumerate(f["classes"]):
+            await insert("classificacoes", {"fundamento_id": fdoc["id"], "label": label, "symbol": symbol, "color": color, "order": j, "active": True, "archived": False})
+        logger.info(f"Seeded extra fundamento {f['name']}")
 
     athletes_ids = {}
     if await db.athletes.count_documents({}) == 0:
@@ -572,6 +670,93 @@ async def seed():
                     "annotations": [], "rally_id": None, "phase": phase,
                 })
         logger.info("Seeded videos & actions")
+
+
+# ----------------- AI Analysis -----------------
+class AIQuery(BaseModel):
+    question: str
+    video_ids: List[str] = []
+    formation: Optional[str] = None
+
+
+AI_SYSTEM = (
+    "Você é um analista técnico de voleibol sênior apoiando a comissão técnica da AVA. "
+    "Responda SEMPRE em português do Brasil, de forma objetiva e fundamentada APENAS nos dados fornecidos. "
+    "Regras obrigatórias: (1) cite os NÚMEROS e PERCENTUAIS reais dos dados; "
+    "(2) informe a quantidade de ações consideradas e o período/partidas; "
+    "(3) distinga claramente PADRÕES ESTATÍSTICOS de HIPÓTESES sobre causas — nunca afirme causalidade sem evidência; "
+    "(4) se houver poucos registros (menos de ~15 ações relevantes) ou dados insuficientes, declare essa limitação e evite conclusões; "
+    "(5) finalize com sugestões de aspectos a investigar nos treinamentos, ligadas aos dados. "
+    "Use subtítulos curtos e listas. Não invente dados que não estão no resumo."
+)
+
+
+async def build_stats(video_ids, formation):
+    q = {}
+    if video_ids:
+        q["video_id"] = {"$in": video_ids}
+    acts = await db.actions.find(q, {"_id": 0}).to_list(8000)
+    if formation:
+        acts = [a for a in acts if a.get("formation") == formation]
+    athletes = {a["id"]: a for a in await db.athletes.find({}, {"_id": 0}).to_list(2000)}
+    videos = {v["id"]: v for v in await db.videos.find({}, {"_id": 0}).to_list(2000)}
+
+    by_fund = {}
+    for a in acts:
+        f = a.get("fundamento_name") or "—"
+        by_fund.setdefault(f, {})
+        c = a.get("classificacao_label") or "—"
+        by_fund[f][c] = by_fund[f].get(c, 0) + 1
+
+    by_formation = {}
+    for a in acts:
+        fo = a.get("formation") or "sem formação"
+        by_formation[fo] = by_formation.get(fo, 0) + 1
+
+    by_athlete = {}
+    for a in acts:
+        for aid in a.get("athlete_ids", []):
+            nm = athletes.get(aid, {}).get("name", "?")
+            by_athlete[nm] = by_athlete.get(nm, 0) + 1
+
+    recep = by_fund.get("Recepção", {})
+    zones = {}
+    for a in acts:
+        court = a.get("court") or {}
+        z = court.get("zone")
+        if z is not None:
+            zones[str(z)] = zones.get(str(z), 0) + 1
+
+    return {
+        "total_acoes": len(acts),
+        "partidas": [videos.get(v, {}).get("title") for v in {a.get("video_id") for a in acts}],
+        "por_fundamento": by_fund,
+        "por_formacao": by_formation,
+        "por_atleta": by_athlete,
+        "recepcao": recep,
+        "zonas_quadra": zones,
+        "formacao_filtro": formation,
+    }, acts
+
+
+@api_router.post("/ai/analyze")
+async def ai_analyze(body: AIQuery):
+    if not EMERGENT_KEY:
+        raise HTTPException(500, "Chave de IA não configurada")
+    stats, acts = await build_stats(body.video_ids, body.formation)
+    import json as _json
+    context = (
+        "RESUMO ESTATÍSTICO (dados reais registrados):\n"
+        + _json.dumps(stats, ensure_ascii=False, indent=2)
+        + f"\n\nPergunta da comissão técnica: {body.question}"
+    )
+    try:
+        chat = LlmChat(api_key=EMERGENT_KEY, session_id=new_id(), system_message=AI_SYSTEM).with_model("anthropic", "claude-sonnet-5-5")
+        answer = await chat.send_message(UserMessage(text=context))
+    except Exception as e:
+        logger.error(f"AI error: {e}")
+        raise HTTPException(502, "Falha ao consultar a IA. Verifique o saldo da chave Emergent.")
+    return {"answer": answer, "n_actions": stats["total_acoes"], "stats": stats}
 
 
 @api_router.get("/")

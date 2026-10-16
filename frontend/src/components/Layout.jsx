@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Home, Film, Users, ClipboardList, BarChart3, Settings, Sun, Moon, ArrowLeft, Menu, X } from "lucide-react";
+import { Home, Film, Users, ClipboardList, BarChart3, Settings, Sun, Moon, ArrowLeft, Menu, X, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { AvaLogo } from "./AvaLogo";
 import { useTheme } from "../context/ThemeContext";
@@ -10,6 +10,7 @@ const NAV = [
   { to: "/galeria", label: "Galeria", icon: Film, testid: "nav-gallery" },
   { to: "/atletas", label: "Atletas", icon: Users, testid: "nav-athletes" },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, testid: "nav-reports" },
+  { to: "/ia", label: "IA", icon: Sparkles, testid: "nav-ai" },
   { to: "/configuracoes", label: "Config", icon: Settings, testid: "nav-settings" },
 ];
 
