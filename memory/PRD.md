@@ -17,26 +17,25 @@ Melhorar o app de análise de vídeo de voleibol da AVA (Associação Voleibol A
 - Treinador/analista (admin): importa vídeos, analisa, marca, gera relatórios.
 - (Futuro) Atleta: acesso individual aos próprios materiais.
 
-## Implemented (2026-06)
+## Implemented (2026-06) — Iteration 1
 - Identidade visual AVA (vermelho/preto/neutros), responsiva, dark+light.
-- Home dashboard com cards centrais e estatísticas ao vivo.
-- Galeria de vídeos: adicionar (YouTube/upload), miniaturas, status (pendente/em análise/concluído), busca e filtros, excluir.
-- Atletas: CRUD, filtro por posição, pasta/dossiê individual (radar + breakdown por fundamento/classificação, clipes clicáveis → análise).
-- Posições, fundamentos e classificações configuráveis (Settings).
-- Análise técnica: player YouTube/HTML5 com controles (play/pause, ±5s, frame, velocidade, seek), marcar lance no tempo exato (fundamento → classificação → atletas → posição/fase/clip/nota), timeline de lances, editar/retime/excluir, reproduzir clipe (antes/depois).
-- Marcações visuais SVG não destrutivas (seta, linha, retângulo, círculo, trajetória, texto; cor, espessura, undo, excluir, limpar) salvas por lance.
-- Relatórios: filtros combinados (partida/atleta/fundamento/classificação/posição/fase), gráficos (pizza + barras empilhadas), eficácia %, lista de ocorrências clicável → lance.
-- Exportação CSV (relatórios e por atleta).
-- Config de duração padrão de clipe (antes/depois).
+- Home dashboard, galeria (YouTube/upload), atletas + dossiê, análise técnica, fundamentos/classificações/posições configuráveis, relatórios, marcações SVG, exportação CSV, duração padrão de clipe.
+
+## Implemented (2026-06) — Iteration 2
+- **Clique-no-fundamento durante a reprodução**: barra rápida ⚡ pausa automática no tempo exato e abre o editor de trecho; "Salvar e continuar" retoma do ponto.
+- **Editor de recorte**: antes/depois, início/fim = tempo atual, prévia do clipe; recorte não destrutivo (clip_start/clip_end em metadados).
+- **Novos campos do lance**: set, formação/rotação, situação tática (K1/K2/K3/Continuidade/Contra-ataque), resultado, e **mapa da quadra de 9 zonas** (ponto + zona + seta de direção).
+- **Formações (P1–P6) configuráveis**; **arquivar/reativar** fundamentos e classificações (histórico preservado).
+- **Rallies**: relacionar ações da mesma jogada (situação tática) via /api/rallies/link.
+- **Relatórios por abas**: Geral, Recepção A/B/C (com %), Por Formação (eficiência K1), Mapa de Calor (quadra).
+- **Análise Inteligente (IA)**: Claude (claude-sonnet-5-5) via chave Emergent, respostas fundamentadas nos dados, informa amostra e limitações, distingue padrão de hipótese.
 
 ## Backlog / remaining
-- P1: Exportação de VÍDEO renderizado (clipe/compilação com/sem marcações gravadas na imagem) — NÃO implementado (atualmente só CSV + reprodução de clipe no app; burn-in server-side inviável para YouTube).
-- P1: Filtros personalizados salvos (modelo salvo no backend existe via saved_filters; UI de salvar/aplicar pendente).
-- P1: Timing por elemento de marcação (aparecer/desaparecer) e redimensionar/girar elementos.
-- P2: Análise de sequências K1/K2 com rally_id agrupando lances (campo fase já registrado).
-- P2: Pastas personalizadas / mover clipes manualmente.
-- P2: Quadro tático dedicado (desenho em quadra vazia).
-- Futuro: contas e permissões de atletas; integração com app principal da AVA.
+- P1: Exportação de VÍDEO renderizado (clipe/compilação com/sem marcações gravadas) — guardar edições em metadados para render em outro servidor (conforme pedido do usuário).
+- P1: Filtros salvos (UI) e compilações temáticas.
+- P2: Comparação entre partidas (tela dedicada de evolução).
+- P2: Timing por elemento de marcação; pastas personalizadas; quadro tático dedicado.
+- Futuro: contas/permissões de atletas; integração com app principal da AVA.
 
 ## Next tasks
 - Implementar UI de filtros salvos e compilações.

@@ -464,7 +464,10 @@ async def link_rally(payload: Dict[str, Any]):
     if len(action_ids) < 1:
         raise HTTPException(400, "Selecione ações para relacionar")
     rally = await insert("rallies", {"video_id": video_id, "situation": situation, "label": label, "action_ids": action_ids})
-    await db.actions.update_many({"id": {"$in": action_ids}}, {"$set": {"rally_id": rally["id"], "phase": situation or None}})
+    set_fields = {"rally_id": rally["id"]}
+    if situation:
+        set_fields["phase"] = situation
+    await db.actions.update_many({"id": {"$in": action_ids}}, {"$set": set_fields})
     return rally
 
 

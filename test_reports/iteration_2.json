@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration-2 testing complete. Backend: all 7 new-feature pytest tests pass (formations CRUD + default P1-P6, extra fundamentos Contra-ataque/Cobertura/Continuidade, archive endpoints with history preserved, new action fields set_number/formation/result/court/clip_start/clip_end persisted via POST+GET+PUT, rally link/unlink with phase propagation + delete rally unlinks + phase filter). AI endpoint test SKIPPED — returns 502 because Emergent LLM key budget is exceeded (LiteLLM RateLimitError 'Current cost: 0.014924, Max budget: 0.001'); the backend code path is correct and raises 502 with a clear message as designed. Frontend: Analyze workspace fully working — 9 quick-mark buttons render, clicking one opens the draft edit panel with court-map (9-zone SVG), mark-set/mark-formation/mark-phase/mark-result/set-start-now/set-end-now/preview-clip controls all present, clicking court places point, Salvar creates new lance (timeline went 10→11), rally linking shows situation+Relacionar button and 'Jogada relacionada' toast on click. Reports page has all 4 tabs (rtab-geral/recepcao/formacao/mapa) and switches correctly. AI page has ai-question/ai-send/ai-suggestion-0; clicking suggestion+send does not render ai-result (as expected due to 502). Settings: Formações tab adds formation (toast 'Formação criada'), Fundamentos tab shows 9 archive-fund-* buttons and toggle-archived.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/ai/analyze", "issue": "Returns 502 due to Emergent LLM key budget exceeded (RateLimitError: Max budget 0.001 USD). Not a code bug — environment limitation. Model configured is 'claude-sonnet-5-5' per spec."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Analyze draft panel", "issue": "Missing data-testid 'clear-court' on the 'limpar' court-reset button (the button exists visually as 'limpar' near the court-map but has no clear-court testid)", "selector": "[data-testid=\"clear-court\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "AI analysis (/ia)", "issue": "ai-result block never renders because /api/ai/analyze returns 502 due to Emergent key budget exceeded. Not a frontend bug.", "affected_selectors": ["[data-testid=\"ai-result\"]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration2.py",
+    "/app/test_reports/pytest/iter2_results.xml"
+  ],
+  "action_items": [
+    "Add data-testid=\"clear-court\" to the 'limpar' button inside the court-map section of Analyze draft panel (minor).",
+    "Top-up / rotate the Emergent LLM key budget to re-enable /api/ai/analyze (environment, not code)."
+  ],
+  "critical_code_review_comments": [
+    "server.py now 794 lines — split into routers/services modules is overdue.",
+    "/api/rallies/link: when situation is None, phase of linked actions is overwritten to None, which can wipe pre-existing phases. Consider only updating phase when situation is provided.",
+    "update() helper copies the input payload including auto fields; PUT on actions re-sends full ActionIn so clip_start/clip_end can be nulled accidentally — PATCH endpoint for partial updates would be safer.",
+    "list_fundamentos / list_classificacoes return ALL docs including archived; frontend has a toggle but server has no ?include_archived param — add one for API consumers.",
+    "No unit test coverage for the AI code path (build_stats) in isolation; add a test that calls build_stats() directly to validate stats shape without hitting the LLM."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration2.py"
+  ],
+  "success_rate": {"backend": "100% of testable (7/7; 1 AI test skipped due to env budget)", "frontend": "100% of iteration-2 flows (AI result blocked by backend 502)"},
+  "test_credentials": "N/A (no auth)",
+  "seed_data_creation": "Backend seed on startup adds 3 extra fundamentos (Contra-ataque, Cobertura, Continuidade), 6 formations (P1-P6). Tests created/cleaned TEST_* data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Iteration-2 fully verified. Key env limitation: Emergent LLM key budget is 0.001 USD and already exceeded, so /api/ai/analyze always returns 502 — the UI ai-result cannot be verified until the key is funded. The only functional UI gap is a missing data-testid 'clear-court' on the limpar button in the Analyze court-map area. Model name is 'claude-sonnet-5-5' (per spec)."
+}
