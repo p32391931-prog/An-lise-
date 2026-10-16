@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 210 40% 98%;
+        --foreground: 222 47% 11%;
+        --card: 0 0% 100%;
+        --card-foreground: 222 47% 11%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222 47% 11%;
+        --primary: 0 72% 51%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222 47% 11%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215 16% 47%;
+        --accent: 0 72% 96%;
+        --accent-foreground: 0 72% 40%;
+        --destructive: 0 72% 51%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 214 32% 91%;
+        --input: 214 32% 91%;
+        --ring: 0 72% 51%;
+        --chart-1: 357 93% 47%;
+        --chart-2: 217 91% 60%;
+        --chart-3: 160 84% 39%;
+        --chart-4: 38 92% 50%;
+        --chart-5: 271 81% 56%;
+        --radius: 0.75rem;
+    }
+    .dark {
+        --background: 240 9% 4%;
+        --foreground: 240 5% 96%;
+        --card: 240 10% 8%;
+        --card-foreground: 240 5% 96%;
+        --popover: 240 10% 7%;
+        --popover-foreground: 240 5% 96%;
+        --primary: 357 93% 47%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 240 10% 14%;
+        --secondary-foreground: 240 5% 96%;
+        --muted: 240 10% 14%;
+        --muted-foreground: 240 5% 65%;
+        --accent: 240 10% 16%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 72% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 240 10% 17%;
+        --input: 240 10% 17%;
+        --ring: 357 93% 47%;
+        --chart-1: 357 93% 55%;
+        --chart-2: 217 91% 60%;
+        --chart-3: 160 84% 45%;
+        --chart-4: 38 92% 55%;
+        --chart-5: 271 81% 65%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Inter', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+    .font-display {
+        font-family: 'Barlow Condensed', sans-serif;
+    }
+    .font-data {
+        font-family: 'JetBrains Mono', monospace;
+    }
+}
+
+@layer utilities {
+    .ava-heading {
+        font-family: 'Barlow Condensed', sans-serif;
+        letter-spacing: -0.01em;
+    }
+    .ava-grid-bg {
+        background-image:
+            radial-gradient(circle at 15% 15%, hsl(var(--primary) / 0.08), transparent 40%),
+            linear-gradient(to right, hsl(var(--border) / 0.4) 1px, transparent 1px),
+            linear-gradient(to bottom, hsl(var(--border) / 0.4) 1px, transparent 1px);
+        background-size: 100% 100%, 42px 42px, 42px 42px;
+    }
+    .ava-red-glow {
+        box-shadow: 0 0 0 1px hsl(var(--primary) / 0.4), 0 10px 40px -12px hsl(var(--primary) / 0.45);
+    }
+    .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 8px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+@keyframes ava-fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.ava-fade-up { animation: ava-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
